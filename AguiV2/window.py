@@ -41,11 +41,13 @@ class Window():
         #lookup
         self.lookup = {
             "point":{"tag":1,"active":2,"parent":3,"children":4,'x':5,'y':6,'radius':7,'color':8},
-            "line": {"tag":1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10}
+            "line": {"tag":1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10},
+            "rect": { "tag":1, "active":2, "parent":3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10, "stroke":11}
         }
         self.updateLookup={
             "point":self.__updatePoint__,
-            "line":self.__updateLine__
+            "line":self.__updateLine__,
+            "rect":self.__updateRect__
         }
         self.activeLookup={True:"normal",False:"hidden"}
 
@@ -89,7 +91,6 @@ class Window():
             self.propertys[self.loc[parent]][4].append(tag)
         self.actives.append(tag)
         self.__updatePoint__(tag)
-
     def __updatePoint__(self,tag):
 
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
@@ -122,8 +123,6 @@ class Window():
                 self.actives.append(tag)
 
             self.canvas.coords(self.objects[tag],self.__calcX__(x)+(self.propertys[n][7]/2),self.__calcY__(y)+(self.propertys[n][7]/2),self.__calcX__(x)-(self.propertys[n][7]/2),self.__calcY__(y)-(self.propertys[n][7]/2))
-
-
     def line(self, tag, x, y, xp,yp, fill="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_line(x, y, xp-x, yp-x, fill=fill,width=thickness)
         self.loc[tag] = self.n
@@ -134,7 +133,45 @@ class Window():
         self.actives.append(tag)
         self.__updateLine__(tag)
     def __updateLine__(self,tag):
-        print(self.actives)
+        if self.propertys[self.loc[tag]][2] or tag in self.actives:
+            self.__updateChildren__(tag)
+            x,y=0,0
+            t = tag
+            active = True
+            n = self.loc[t]
+            x += self.propertys[n][5]
+            y += self.propertys[n][6]
+            self.canvas.itemconfig(self.objects[tag], state="normal")
+            if(self.propertys[n][2] == False):
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+                active = False
+                self.actives.remove(t)
+            while True:
+                tn = self.loc[t]
+                if(self.propertys[tn][3]==None):
+                    break
+                t = self.propertys[tn][3]
+                tn = self.loc[t]
+                x += self.propertys[tn][5]
+                y += self.propertys[tn][6]
+                if (self.propertys[tn][2] == False):
+                    self.canvas.itemconfig(self.objects[tag], state="hidden")
+                    active = False
+                    self.actives.remove(t)
+            n = self.loc[tag]
+            if active and not(tag in self.actives):
+                self.actives.append(tag)
+            self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
+    def rect(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
+        self.objects[tag] = self.canvas.create_rectangle(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
+        self.loc[tag] = self.n
+        self.propertys.append(["rect", tag, active, parent, [], x, y, xp-x, yp-x,thickness, fill,stroke])
+        self.n += 1
+        if parent != None:
+            self.propertys[self.loc[parent]][4].append(tag)
+        self.actives.append(tag)
+        self.__updateRect__(tag)
+    def __updateRect__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
             self.__updateChildren__(tag)
             x,y=0,0
