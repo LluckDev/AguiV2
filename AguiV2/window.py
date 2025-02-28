@@ -39,10 +39,12 @@ class Window():
 
         #lookup
         self.lookup = {
-            "point":{"tag":1,"active":2,"parent":3,"children":4,'x':5,'y':6,'radius':7,'stroke':8}
+            "point":{"tag":1,"active":2,"parent":3,"children":4,'x':5,'y':6,'radius':7,'color':8},
+            "line": {"tag":1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10}
         }
         self.updateLookup={
-            "point":self.__updatePoint__
+            "point":self.__updatePoint__,
+            "line":self.__updateLine__
         }
         self.activeLookup={True:"normal",False:"hidden"}
 
@@ -77,10 +79,10 @@ class Window():
 
 
 
-    def point(self,tag,x,y,radius=1,stroke="#000000",active=True,parent=None):
-        self.objects[tag] = self.canvas.create_oval(x, y, x, y, fill=stroke)
+    def point(self,tag,x,y,radius=1,color="#000000",active=True,parent=None):
+        self.objects[tag] = self.canvas.create_oval(x, y, x, y, fill=color,outline=color)
         self.loc[tag] = self.n
-        self.propertys.append(["point",tag,active,parent,[],x,y,radius,stroke])
+        self.propertys.append(["point",tag,active,parent,[],x,y,radius,color])
         self.n +=1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
@@ -110,7 +112,37 @@ class Window():
                 self.canvas.itemconfig(self.objects[tag], state="hidden")
         self.canvas.coords(self.objects[tag],self.__calcX__(x)+(self.propertys[n][7]/2),self.__calcY__(y)+(self.propertys[n][7]/2),self.__calcX__(x)-(self.propertys[n][7]/2),self.__calcY__(y)-(self.propertys[n][7]/2))
 
+    def line(self, tag, x, y, xp,yp, fill="#000000",thickness=1 ,active=True, parent=None):
+        self.objects[tag] = self.canvas.create_line(x, y, xp-x, yp-x, fill=fill,width=thickness)
+        self.loc[tag] = self.n
+        self.propertys.append(["line", tag, active, parent, [], x, y, xp-x, yp-x,thickness, fill])
+        self.n += 1
+        if parent != None:
+            self.propertys[self.loc[parent]][4].append(tag)
 
+        self.__updateLine__(tag)
+    def __updateLine__(self,tag):
+        self.__updateChildren__(tag)
+        x,y=0,0
+        t = tag
+        n = self.loc[t]
+        x += self.propertys[n][5]
+        y += self.propertys[n][6]
+        self.canvas.itemconfig(self.objects[tag], state="normal")
+        if(self.propertys[n][2] == False):
+            self.canvas.itemconfig(self.objects[tag], state="hidden")
+        while True:
+            tn = self.loc[t]
+            if(self.propertys[tn][3]==None):
+                break
+            t = self.propertys[tn][3]
+            tn = self.loc[t]
+            x += self.propertys[tn][5]
+            y += self.propertys[tn][6]
+            if (self.propertys[tn][2] == False):
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+        n = self.loc[tag]
+        self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
 
 
 
@@ -130,5 +162,12 @@ class Window():
 
 
     def set(self,tag,loc,value):
-        self.propertys[self.loc[tag]][self.lookup[self.propertys[self.loc[tag]][0]][loc]]=value
-        self.__update_item__(tag)
+        self.propertys[self.loc[tag]][self.lookup[self.propertys[self.loc[tag]][0]][loc]] = value
+        if(loc == "color"):
+            self.canvas.itemconfig(self.objects[tag],fill=value,outline=value)
+        elif(loc == "outline"):
+            self.canvas.itemconfig(self.objects[tag],outline=value)
+        elif (loc == "fill"):
+            self.canvas.itemconfig(self.objects[tag], fill=value)
+        else:
+            self.__update_item__(tag)

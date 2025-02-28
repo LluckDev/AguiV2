@@ -3,18 +3,20 @@ from tkinter import *
 
 
 App = window.Window()
+App.line("a",0,0,20,20,thickness=1)
+App.point("b",20,20,radius=5,parent="a")
 
-App.point("a",20,20,radius=5)
-App.point("b",10,10,radius=5,parent="a")
 
 
 while App.running:
     App.set("a","x",App.mX)
     App.set("a", "y", App.mY)
     if App.mX >= 50:
-        App.set("b","active",False)
+        App.set("a","active",False)
+        App.set("b","color","#00ff00")
     else:
-        App.set("b", "active", True)
+        App.set("a", "active", True)
+        App.set("b", "color", "#ff0000")
     App.update()
 
 
