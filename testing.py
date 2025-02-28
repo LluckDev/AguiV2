@@ -2,8 +2,7 @@ from AguiV2 import window
 
 App = window.Window()
 
-App.rect("a",10,10,20,20)
-
+App.text("a",10,10,10,"hi",font="Monomakh")
 while App.running:
     App.update()
 

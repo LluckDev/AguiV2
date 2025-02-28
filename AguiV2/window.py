@@ -1,6 +1,5 @@
 from tkinter import *
 
-
 #window class
 class Window():
     def __init__(self, grid=100, screenX=800, screenY=520, bgc="#ffffff", fullscreen=False, title="Agui"):
@@ -35,6 +34,7 @@ class Window():
         self.winY = screenY
         self.mX = 0
         self.mY = 0
+        self.mouseP = False
 
 
 
@@ -42,12 +42,16 @@ class Window():
         self.lookup = {
             "point":{"tag":1,"active":2,"parent":3,"children":4,'x':5,'y':6,'radius':7,'color':8},
             "line": {"tag":1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10},
-            "rect": { "tag":1, "active":2, "parent":3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10, "stroke":11}
+            "rect": { "tag":1, "active":2, "parent":3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10, "stroke":11},
+            "circle": {"tag": 1, "active": 2, "parent": 3, "children": 4, 'x': 5, 'y': 6, 'xp': 7, 'yp': 8,'thickness': 9, "fill": 10, "stroke": 11},
+            "text":{ "tag":1, "active":2, 'parent':3, "children":4, 'x':5, "y":6, 'size':7, 'text':8, 'fill':9, 'font':10, 'angle':11}
         }
         self.updateLookup={
             "point":self.__updatePoint__,
             "line":self.__updateLine__,
-            "rect":self.__updateRect__
+            "rect":self.__updateRect__,
+            "circle": self.__updateCircle__,
+            "text":self.__updateText__
         }
         self.activeLookup={True:"normal",False:"hidden"}
 
@@ -201,9 +205,84 @@ class Window():
             if active and not(tag in self.actives):
                 self.actives.append(tag)
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
-
-
-
+    def circle(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
+        self.objects[tag] = self.canvas.create_oval(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
+        self.loc[tag] = self.n
+        self.propertys.append(["circle", tag, active, parent, [], x, y, xp-x, yp-x,thickness, fill,stroke])
+        self.n += 1
+        if parent != None:
+            self.propertys[self.loc[parent]][4].append(tag)
+        self.actives.append(tag)
+        self.__updateRect__(tag)
+    def __updateCircle__(self,tag):
+        if self.propertys[self.loc[tag]][2] or tag in self.actives:
+            self.__updateChildren__(tag)
+            x,y=0,0
+            t = tag
+            active = True
+            n = self.loc[t]
+            x += self.propertys[n][5]
+            y += self.propertys[n][6]
+            self.canvas.itemconfig(self.objects[tag], state="normal")
+            if(self.propertys[n][2] == False):
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+                active = False
+                self.actives.remove(t)
+            while True:
+                tn = self.loc[t]
+                if(self.propertys[tn][3]==None):
+                    break
+                t = self.propertys[tn][3]
+                tn = self.loc[t]
+                x += self.propertys[tn][5]
+                y += self.propertys[tn][6]
+                if (self.propertys[tn][2] == False):
+                    self.canvas.itemconfig(self.objects[tag], state="hidden")
+                    active = False
+                    self.actives.remove(t)
+            n = self.loc[tag]
+            if active and not(tag in self.actives):
+                self.actives.append(tag)
+            self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
+    def text(self,tag,x,y,size,text,fill="#000000",font="Lato",parent=None,active=True,angle=0):
+        self.objects[tag] = self.canvas.create_text(x,y,text=str(text),fill=fill,angle=angle,font=font)
+        self.loc[tag]=self.n
+        self.propertys.append(["text",tag,active,parent,[],x,y,size,text,fill,font,angle])
+        self.n+=1
+        if parent != None:
+            self.propertys[self.loc[parent]][4].append(tag)
+        self.actives.append(tag)
+    def __updateText__(self,tag):
+        if self.propertys[self.loc[tag]][2] or tag in self.actives:
+            self.__updateChildren__(tag)
+            x, y = 0, 0
+            t = tag
+            active = True
+            n = self.loc[t]
+            x += self.propertys[n][5]
+            y += self.propertys[n][6]
+            self.canvas.itemconfig(self.objects[tag], state="normal")
+            if (self.propertys[n][2] == False):
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+                active = False
+                self.actives.remove(t)
+            while True:
+                tn = self.loc[t]
+                if (self.propertys[tn][3] == None):
+                    break
+                t = self.propertys[tn][3]
+                tn = self.loc[t]
+                x += self.propertys[tn][5]
+                y += self.propertys[tn][6]
+                if (self.propertys[tn][2] == False):
+                    self.canvas.itemconfig(self.objects[tag], state="hidden")
+                    active = False
+                    self.actives.remove(t)
+            n = self.loc[tag]
+            if active and not (tag in self.actives):
+                self.actives.append(tag)
+            self.canvas.coords(self.objects[tag], self.__calcX__(x), self.__calcY__(y))
+            self.canvas.itemconfig(self.objects[tag],font=(self.propertys[n][10],int(self.propertys[n][7]*(self.winX+self.winY)/600)))
 
 
     def __calcY__(self,n):
@@ -228,5 +307,7 @@ class Window():
                 self.canvas.itemconfig(self.objects[tag],outline=value)
             elif (loc == "fill"):
                 self.canvas.itemconfig(self.objects[tag], fill=value)
+            elif (loc == "text"):
+                self.canvas.itemconfig(self.objects[tag],text=value)
             else:
                 self.__update_item__(tag)
