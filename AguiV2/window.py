@@ -10,6 +10,7 @@ class Window():
         self.objects = {} # dict [id : object]
         self.loc = {} # dict [id : n]
         self.propertys = [] # array [type,tag,active,parent,[children],x,y,args*]
+        self.actives = []
         self.n = 0 # total number of objects
 
 
@@ -59,7 +60,7 @@ class Window():
             self.winY = self.disp.winfo_height()
             self.winX = self.disp.winfo_width()
             self.canvas.config(width=self.winX, height=self.winY)
-            for i in self.loc:
+            for i in self.actives:
                 self.__update_item__(i)
 
         self.mX = (self.i/self.winX)*(self.disp.winfo_pointerx()-self.disp.winfo_x()-8)
@@ -86,31 +87,42 @@ class Window():
         self.n +=1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
-
+        self.actives.append(tag)
         self.__updatePoint__(tag)
 
     def __updatePoint__(self,tag):
-        self.__updateChildren__(tag)
-        x,y=0,0
-        active = True
-        t = tag
-        n = self.loc[t]
-        x += self.propertys[n][5]
-        y += self.propertys[n][6]
-        self.canvas.itemconfig(self.objects[tag], state="normal")
-        if(self.propertys[n][2] == False):
-            self.canvas.itemconfig(self.objects[tag], state="hidden")
-        while True:
-            tn = self.loc[t]
-            if(self.propertys[tn][3]==None):
-                break
-            t = self.propertys[tn][3]
-            tn = self.loc[t]
-            x += self.propertys[tn][5]
-            y += self.propertys[tn][6]
-            if (self.propertys[tn][2] == False):
+
+        if self.propertys[self.loc[tag]][2] or tag in self.actives:
+
+            self.__updateChildren__(tag)
+            x,y=0,0
+            active = True
+            t = tag
+            n = self.loc[t]
+            x += self.propertys[n][5]
+            y += self.propertys[n][6]
+            self.canvas.itemconfig(self.objects[tag], state="normal")
+            if(self.propertys[n][2] == False):
                 self.canvas.itemconfig(self.objects[tag], state="hidden")
-        self.canvas.coords(self.objects[tag],self.__calcX__(x)+(self.propertys[n][7]/2),self.__calcY__(y)+(self.propertys[n][7]/2),self.__calcX__(x)-(self.propertys[n][7]/2),self.__calcY__(y)-(self.propertys[n][7]/2))
+                active =False
+                self.actives.remove(t)
+            while True:
+                tn = self.loc[t]
+                if(self.propertys[tn][3]==None):
+                    break
+                t = self.propertys[tn][3]
+                tn = self.loc[t]
+                x += self.propertys[tn][5]
+                y += self.propertys[tn][6]
+                if (self.propertys[tn][2] == False):
+                    self.canvas.itemconfig(self.objects[tag], state="hidden")
+                    active = False
+                    self.actives.remove(t)
+            if active and not(tag in self.actives):
+                self.actives.append(tag)
+
+            self.canvas.coords(self.objects[tag],self.__calcX__(x)+(self.propertys[n][7]/2),self.__calcY__(y)+(self.propertys[n][7]/2),self.__calcX__(x)-(self.propertys[n][7]/2),self.__calcY__(y)-(self.propertys[n][7]/2))
+
 
     def line(self, tag, x, y, xp,yp, fill="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_line(x, y, xp-x, yp-x, fill=fill,width=thickness)
@@ -119,30 +131,39 @@ class Window():
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
-
+        self.actives.append(tag)
         self.__updateLine__(tag)
     def __updateLine__(self,tag):
-        self.__updateChildren__(tag)
-        x,y=0,0
-        t = tag
-        n = self.loc[t]
-        x += self.propertys[n][5]
-        y += self.propertys[n][6]
-        self.canvas.itemconfig(self.objects[tag], state="normal")
-        if(self.propertys[n][2] == False):
-            self.canvas.itemconfig(self.objects[tag], state="hidden")
-        while True:
-            tn = self.loc[t]
-            if(self.propertys[tn][3]==None):
-                break
-            t = self.propertys[tn][3]
-            tn = self.loc[t]
-            x += self.propertys[tn][5]
-            y += self.propertys[tn][6]
-            if (self.propertys[tn][2] == False):
+        print(self.actives)
+        if self.propertys[self.loc[tag]][2] or tag in self.actives:
+            self.__updateChildren__(tag)
+            x,y=0,0
+            t = tag
+            active = True
+            n = self.loc[t]
+            x += self.propertys[n][5]
+            y += self.propertys[n][6]
+            self.canvas.itemconfig(self.objects[tag], state="normal")
+            if(self.propertys[n][2] == False):
                 self.canvas.itemconfig(self.objects[tag], state="hidden")
-        n = self.loc[tag]
-        self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
+                active = False
+                self.actives.remove(t)
+            while True:
+                tn = self.loc[t]
+                if(self.propertys[tn][3]==None):
+                    break
+                t = self.propertys[tn][3]
+                tn = self.loc[t]
+                x += self.propertys[tn][5]
+                y += self.propertys[tn][6]
+                if (self.propertys[tn][2] == False):
+                    self.canvas.itemconfig(self.objects[tag], state="hidden")
+                    active = False
+                    self.actives.remove(t)
+            n = self.loc[tag]
+            if active and not(tag in self.actives):
+                self.actives.append(tag)
+            self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
 
 
 
@@ -162,12 +183,13 @@ class Window():
 
 
     def set(self,tag,loc,value):
-        self.propertys[self.loc[tag]][self.lookup[self.propertys[self.loc[tag]][0]][loc]] = value
-        if(loc == "color"):
-            self.canvas.itemconfig(self.objects[tag],fill=value,outline=value)
-        elif(loc == "outline"):
-            self.canvas.itemconfig(self.objects[tag],outline=value)
-        elif (loc == "fill"):
-            self.canvas.itemconfig(self.objects[tag], fill=value)
-        else:
-            self.__update_item__(tag)
+        if self.propertys[self.loc[tag]][self.lookup[self.propertys[self.loc[tag]][0]][loc]] != value and(tag in self.actives or loc == "active"):
+            self.propertys[self.loc[tag]][self.lookup[self.propertys[self.loc[tag]][0]][loc]] = value
+            if(loc == "color"):
+                self.canvas.itemconfig(self.objects[tag],fill=value,outline=value)
+            elif(loc == "outline"):
+                self.canvas.itemconfig(self.objects[tag],outline=value)
+            elif (loc == "fill"):
+                self.canvas.itemconfig(self.objects[tag], fill=value)
+            else:
+                self.__update_item__(tag)
