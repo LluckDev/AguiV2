@@ -90,10 +90,14 @@ class Window():
     def __updatePoint__(self,tag):
         self.__updateChildren__(tag)
         x,y=0,0
+        active = True
         t = tag
         n = self.loc[t]
         x += self.propertys[n][5]
         y += self.propertys[n][6]
+        self.canvas.itemconfig(self.objects[tag], state="normal")
+        if(self.propertys[n][2] == False):
+            self.canvas.itemconfig(self.objects[tag], state="hidden")
         while True:
             tn = self.loc[t]
             if(self.propertys[tn][3]==None):
@@ -102,8 +106,8 @@ class Window():
             tn = self.loc[t]
             x += self.propertys[tn][5]
             y += self.propertys[tn][6]
-
-
+            if (self.propertys[tn][2] == False):
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
         self.canvas.coords(self.objects[tag],self.__calcX__(x)+(self.propertys[n][7]/2),self.__calcY__(y)+(self.propertys[n][7]/2),self.__calcX__(x)-(self.propertys[n][7]/2),self.__calcY__(y)-(self.propertys[n][7]/2))
 
 
