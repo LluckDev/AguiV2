@@ -21,6 +21,8 @@ class Window():
         self.propertys = [] # array [type,tag,active,parent,[children],x,y,args*]
         self.actives = []
         self.mouseMoveUpdates = []
+        self.clickUpdates1 = []
+        self.updated = []
         self.n = 0 # total number of objects
 
 
@@ -37,6 +39,10 @@ class Window():
         self.canvas.pack()
         self.i = grid
         self.disp.protocol("WM_DELETE_WINDOW", self.close)
+        self.canvas.bind("<Button-1>", self.mouse1)
+        self.canvas.bind("<Button-3>", self.mouse2)
+        self.canvas.bind("<Button-2>", self.mouse3)
+        self.clicktype = None
 
 
         # vars
@@ -45,7 +51,6 @@ class Window():
         self.winY = screenY
         self.mX = 0
         self.mY = 0
-        self.mouseP = False
 
 
 
@@ -56,7 +61,8 @@ class Window():
             "rect": { "tag":1, "active":2, "parent":3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10, "stroke":11},
             "circle": {"tag": 1, "active": 2, "parent": 3, "children": 4, 'x': 5, 'y': 6, 'xp': 7, 'yp': 8,'thickness': 9, "fill": 10, "stroke": 11},
             "text":{ "tag":1, "active":2, 'parent':3, "children":4, 'x':5, "y":6, 'size':7, 'text':8, 'fill':9, 'font':10, 'angle':11},
-            "hitbox":{ 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'function':9,"activated":10}
+            "hitbox":{ 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'function':9,"activated":10},
+            "button": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'functionL':9,'functionR':10,'functionM':11}
         }
         self.updateLookup={
             "point":self.__updatePoint__,
@@ -64,17 +70,38 @@ class Window():
             "rect":self.__updateRect__,
             "circle": self.__updateCircle__,
             "text":self.__updateText__,
-            "hitbox":self.__updateHitbox__
+            "hitbox":self.__updateHitbox__,
+            "button":self.__updateButton__
         }
         self.activeLookup={True:"normal",False:"hidden"}
 
     def close(self):
         self.running=False
         self.disp.destroy()
+    def mouse1(self,event):
+        self.clicktype = 1
+
+        for i in self.clickUpdates1:
+            self.__update_item__(i)
+
+    def mouse2(self,event):
+        self.clicktype = 2
+
+        for i in self.clickUpdates1:
+            self.__update_item__(i)
+
+    def mouse3(self,event):
+        self.clicktype = 3
+
+        for i in self.clickUpdates1:
+            self.__update_item__(i)
+
+
 
 
 
     def update(self):
+        self.updated = []
         if(self.winY-self.disp.winfo_height()!=0 or self.winX-self.disp.winfo_width()!=0):
             self.winY = self.disp.winfo_height()
             self.winX = self.disp.winfo_width()
@@ -164,7 +191,7 @@ class Window():
         self.__updateRect__(tag)
     def __updateRect__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
-            self.__updateChildren__(tag)
+
             p = self.__calcloc__(tag)
             x = p[0]
             y = p[1]
@@ -176,6 +203,7 @@ class Window():
             elif a and not (tag in self.actives):
                 self.actives.append(tag)
                 self.canvas.itemconfig(self.objects[tag], state="normal")
+            self.__updateChildren__(tag)
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
     def circle(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_oval(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
@@ -233,7 +261,7 @@ class Window():
             self.propertys[self.loc[parent]][4].append(tag)
         self.mouseMoveUpdates.append(tag)
     def __updateHitbox__(self,tag):
-        self.__updateChildren__(tag)
+
         p = self.__calcloc__(tag)
         x = p[0]
         y = p[1]
@@ -247,11 +275,40 @@ class Window():
         if inArea(x,y,x+self.propertys[n][7],y+self.propertys[n][8],self.mX,self.mY):
             if(self.propertys[n][10]==False):
                 self.propertys[n][10] = True
-                self.propertys[n][9]()
+                if not (f"{n} {9}" in self.updated):
+                    self.propertys[n][9]()
+                    self.propertys[n][9]()
 
         else:
             self.propertys[n][10] = False
+        self.__updateChildren__(tag)
+    def button(self,tag,x,y,xp,yp,functionL,functionR=None,functionM=None,parent=None,active=True):
+        self.loc[tag] = self.n
+        self.propertys.append(["button", tag, active, parent, [], x, y, xp, yp, functionL,functionR,functionM])
+        self.n += 1
+        if parent != None:
+            self.propertys[self.loc[parent]][4].append(tag)
+        self.clickUpdates1.append(tag)
+    def __updateButton__(self,tag):
 
+        p = self.__calcloc__(tag)
+        x = p[0]
+        y = p[1]
+        n = self.loc[tag]
+        a = self.__calcVis__(tag)
+        if not(a):
+            self.clickUpdates1.remove(tag)
+        elif a and not (tag in self.clickUpdates1):
+            self.clickUpdates1.append(tag)
+        if inArea(x,y,x+self.propertys[n][7],y+self.propertys[n][8],self.mX,self.mY):
+            try:
+                if not(f"{n} {8+self.clicktype}" in self.updated):
+                    self.updated.append(f"{n} {8 + self.clicktype}")
+                    self.propertys[n][8+self.clicktype]()
+
+            except:
+                pass
+        self.__updateChildren__(tag)
 
 
     def __calcY__(self,n):
