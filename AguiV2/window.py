@@ -1,4 +1,14 @@
 from tkinter import *
+def inArea(x, y, xp, yp, mx, my):
+    if x <= mx <= xp and y <= my <= yp:
+        return True
+    else:
+        return False
+
+
+
+
+
 
 #window class
 class Window():
@@ -10,6 +20,7 @@ class Window():
         self.loc = {} # dict [id : n]
         self.propertys = [] # array [type,tag,active,parent,[children],x,y,args*]
         self.actives = []
+        self.mouseMoveUpdates = []
         self.n = 0 # total number of objects
 
 
@@ -44,14 +55,16 @@ class Window():
             "line": {"tag":1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10},
             "rect": { "tag":1, "active":2, "parent":3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'thickness':9, "fill":10, "stroke":11},
             "circle": {"tag": 1, "active": 2, "parent": 3, "children": 4, 'x': 5, 'y': 6, 'xp': 7, 'yp': 8,'thickness': 9, "fill": 10, "stroke": 11},
-            "text":{ "tag":1, "active":2, 'parent':3, "children":4, 'x':5, "y":6, 'size':7, 'text':8, 'fill':9, 'font':10, 'angle':11}
+            "text":{ "tag":1, "active":2, 'parent':3, "children":4, 'x':5, "y":6, 'size':7, 'text':8, 'fill':9, 'font':10, 'angle':11},
+            "hitbox":{ 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'function':9,"activated":10}
         }
         self.updateLookup={
             "point":self.__updatePoint__,
             "line":self.__updateLine__,
             "rect":self.__updateRect__,
             "circle": self.__updateCircle__,
-            "text":self.__updateText__
+            "text":self.__updateText__,
+            "hitbox":self.__updateHitbox__
         }
         self.activeLookup={True:"normal",False:"hidden"}
 
@@ -69,9 +82,13 @@ class Window():
             for i in self.actives:
                 self.__update_item__(i)
 
-        self.mX = (self.i/self.winX)*(self.disp.winfo_pointerx()-self.disp.winfo_x()-8)
-        self.mY = (self.i/self.winY)*(self.disp.winfo_pointery()-self.disp.winfo_y()-30)
 
+
+
+        for i in self.mouseMoveUpdates:
+            self.__update_item__(i)
+        self.mX = (self.i / self.winX) * (self.disp.winfo_pointerx() - self.disp.winfo_x() - 8)
+        self.mY = (self.i / self.winY) * (self.disp.winfo_pointery() - self.disp.winfo_y() - 30)
 
 
 
@@ -98,33 +115,18 @@ class Window():
     def __updatePoint__(self,tag):
 
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
-
             self.__updateChildren__(tag)
-            x,y=0,0
-            active = True
-            t = tag
-            n = self.loc[t]
-            x += self.propertys[n][5]
-            y += self.propertys[n][6]
-            self.canvas.itemconfig(self.objects[tag], state="normal")
-            if(self.propertys[n][2] == False):
+            p = self.__calcloc__(tag)
+            x = p[0]
+            y = p[1]
+            n = self.loc[tag]
+            a = self.__calcVis__(tag)
+            if not(a):
+                self.actives.remove(tag)
                 self.canvas.itemconfig(self.objects[tag], state="hidden")
-                active =False
-                self.actives.remove(t)
-            while True:
-                tn = self.loc[t]
-                if(self.propertys[tn][3]==None):
-                    break
-                t = self.propertys[tn][3]
-                tn = self.loc[t]
-                x += self.propertys[tn][5]
-                y += self.propertys[tn][6]
-                if (self.propertys[tn][2] == False):
-                    self.canvas.itemconfig(self.objects[tag], state="hidden")
-                    active = False
-                    self.actives.remove(t)
-            if active and not(tag in self.actives):
+            elif a and not(tag in self.actives):
                 self.actives.append(tag)
+                self.canvas.itemconfig(self.objects[tag], state="normal")
 
             self.canvas.coords(self.objects[tag],self.__calcX__(x)+(self.propertys[n][7]/2),self.__calcY__(y)+(self.propertys[n][7]/2),self.__calcX__(x)-(self.propertys[n][7]/2),self.__calcY__(y)-(self.propertys[n][7]/2))
     def line(self, tag, x, y, xp,yp, fill="#000000",thickness=1 ,active=True, parent=None):
@@ -139,32 +141,17 @@ class Window():
     def __updateLine__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
             self.__updateChildren__(tag)
-            x,y=0,0
-            t = tag
-            active = True
-            n = self.loc[t]
-            x += self.propertys[n][5]
-            y += self.propertys[n][6]
-            self.canvas.itemconfig(self.objects[tag], state="normal")
-            if(self.propertys[n][2] == False):
-                self.canvas.itemconfig(self.objects[tag], state="hidden")
-                active = False
-                self.actives.remove(t)
-            while True:
-                tn = self.loc[t]
-                if(self.propertys[tn][3]==None):
-                    break
-                t = self.propertys[tn][3]
-                tn = self.loc[t]
-                x += self.propertys[tn][5]
-                y += self.propertys[tn][6]
-                if (self.propertys[tn][2] == False):
-                    self.canvas.itemconfig(self.objects[tag], state="hidden")
-                    active = False
-                    self.actives.remove(t)
+            p = self.__calcloc__(tag)
+            x = p[0]
+            y = p[1]
             n = self.loc[tag]
-            if active and not(tag in self.actives):
+            a = self.__calcVis__(tag)
+            if not (a):
+                self.actives.remove(tag)
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+            elif a and not (tag in self.actives):
                 self.actives.append(tag)
+                self.canvas.itemconfig(self.objects[tag], state="normal")
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
     def rect(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_rectangle(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
@@ -178,32 +165,17 @@ class Window():
     def __updateRect__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
             self.__updateChildren__(tag)
-            x,y=0,0
-            t = tag
-            active = True
-            n = self.loc[t]
-            x += self.propertys[n][5]
-            y += self.propertys[n][6]
-            self.canvas.itemconfig(self.objects[tag], state="normal")
-            if(self.propertys[n][2] == False):
-                self.canvas.itemconfig(self.objects[tag], state="hidden")
-                active = False
-                self.actives.remove(t)
-            while True:
-                tn = self.loc[t]
-                if(self.propertys[tn][3]==None):
-                    break
-                t = self.propertys[tn][3]
-                tn = self.loc[t]
-                x += self.propertys[tn][5]
-                y += self.propertys[tn][6]
-                if (self.propertys[tn][2] == False):
-                    self.canvas.itemconfig(self.objects[tag], state="hidden")
-                    active = False
-                    self.actives.remove(t)
+            p = self.__calcloc__(tag)
+            x = p[0]
+            y = p[1]
             n = self.loc[tag]
-            if active and not(tag in self.actives):
+            a = self.__calcVis__(tag)
+            if not (a):
+                self.actives.remove(tag)
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+            elif a and not (tag in self.actives):
                 self.actives.append(tag)
+                self.canvas.itemconfig(self.objects[tag], state="normal")
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
     def circle(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_oval(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
@@ -217,32 +189,17 @@ class Window():
     def __updateCircle__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
             self.__updateChildren__(tag)
-            x,y=0,0
-            t = tag
-            active = True
-            n = self.loc[t]
-            x += self.propertys[n][5]
-            y += self.propertys[n][6]
-            self.canvas.itemconfig(self.objects[tag], state="normal")
-            if(self.propertys[n][2] == False):
-                self.canvas.itemconfig(self.objects[tag], state="hidden")
-                active = False
-                self.actives.remove(t)
-            while True:
-                tn = self.loc[t]
-                if(self.propertys[tn][3]==None):
-                    break
-                t = self.propertys[tn][3]
-                tn = self.loc[t]
-                x += self.propertys[tn][5]
-                y += self.propertys[tn][6]
-                if (self.propertys[tn][2] == False):
-                    self.canvas.itemconfig(self.objects[tag], state="hidden")
-                    active = False
-                    self.actives.remove(t)
+            p = self.__calcloc__(tag)
+            x = p[0]
+            y = p[1]
             n = self.loc[tag]
-            if active and not(tag in self.actives):
+            a = self.__calcVis__(tag)
+            if not (a):
+                self.actives.remove(tag)
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+            elif a and not (tag in self.actives):
                 self.actives.append(tag)
+                self.canvas.itemconfig(self.objects[tag], state="normal")
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
     def text(self,tag,x,y,size,text,fill="#000000",font="Lato",parent=None,active=True,angle=0):
         self.objects[tag] = self.canvas.create_text(x,y,text=str(text),fill=fill,angle=angle,font=font)
@@ -255,34 +212,46 @@ class Window():
     def __updateText__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
             self.__updateChildren__(tag)
-            x, y = 0, 0
-            t = tag
-            active = True
-            n = self.loc[t]
-            x += self.propertys[n][5]
-            y += self.propertys[n][6]
-            self.canvas.itemconfig(self.objects[tag], state="normal")
-            if (self.propertys[n][2] == False):
-                self.canvas.itemconfig(self.objects[tag], state="hidden")
-                active = False
-                self.actives.remove(t)
-            while True:
-                tn = self.loc[t]
-                if (self.propertys[tn][3] == None):
-                    break
-                t = self.propertys[tn][3]
-                tn = self.loc[t]
-                x += self.propertys[tn][5]
-                y += self.propertys[tn][6]
-                if (self.propertys[tn][2] == False):
-                    self.canvas.itemconfig(self.objects[tag], state="hidden")
-                    active = False
-                    self.actives.remove(t)
+            p = self.__calcloc__(tag)
+            x = p[0]
+            y = p[1]
             n = self.loc[tag]
-            if active and not (tag in self.actives):
+            a = self.__calcVis__(tag)
+            if not (a):
+                self.actives.remove(tag)
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+            elif a and not (tag in self.actives):
                 self.actives.append(tag)
+                self.canvas.itemconfig(self.objects[tag], state="normal")
             self.canvas.coords(self.objects[tag], self.__calcX__(x), self.__calcY__(y))
             self.canvas.itemconfig(self.objects[tag],font=(self.propertys[n][10],int(self.propertys[n][7]*(self.winX+self.winY)/600)))
+    def hitbox(self,tag,x,y,xp,yp,function=None,parent=None,active=True):
+        self.loc[tag] = self.n
+        self.propertys.append(["hitbox",tag,active,parent,[],x,y,xp,yp,function,False])
+        self.n +=1
+        if parent != None:
+            self.propertys[self.loc[parent]][4].append(tag)
+        self.mouseMoveUpdates.append(tag)
+    def __updateHitbox__(self,tag):
+        self.__updateChildren__(tag)
+        p = self.__calcloc__(tag)
+        x = p[0]
+        y = p[1]
+        n = self.loc[tag]
+        a = self.__calcVis__(tag)
+        if not (a):
+            self.mouseMoveUpdates.remove(tag)
+        elif a and not (tag in self.mouseMoveUpdates):
+            self.mouseMoveUpdates.append(tag)
+
+        if inArea(x,y,x+self.propertys[n][7],y+self.propertys[n][8],self.mX,self.mY):
+            if(self.propertys[n][10]==False):
+                self.propertys[n][10] = True
+                self.propertys[n][9]()
+
+        else:
+            self.propertys[n][10] = False
+
 
 
     def __calcY__(self,n):
@@ -295,8 +264,38 @@ class Window():
         for i in self.propertys[n][4]:
             self.__update_item__(i)
             self.__updateChildren__(i)
+    def __calcloc__(self,tag):
+        x, y = 0, 0
 
+        t = tag
+        n = self.loc[t]
+        x += self.propertys[n][5]
+        y += self.propertys[n][6]
 
+        while True:
+            tn = self.loc[t]
+            if (self.propertys[tn][3] == None):
+                break
+            t = self.propertys[tn][3]
+            tn = self.loc[t]
+            x += self.propertys[tn][5]
+            y += self.propertys[tn][6]
+        return (x,y)
+
+    def __calcVis__(self,tag):
+        active = True
+        t = tag
+        n = self.loc[t]
+        if (self.propertys[n][2] == False):
+            active = False
+        while True:
+            tn = self.loc[t]
+            if (self.propertys[tn][3] == None):
+                break
+            t = self.propertys[tn][3]
+        if (self.propertys[tn][2] == False):
+            active = False
+        return active
 
     def set(self,tag,loc,value):
         if self.propertys[self.loc[tag]][self.lookup[self.propertys[self.loc[tag]][0]][loc]] != value and(tag in self.actives or loc == "active"):
@@ -311,3 +310,5 @@ class Window():
                 self.canvas.itemconfig(self.objects[tag],text=value)
             else:
                 self.__update_item__(tag)
+    def get(self,tag,loc):
+        return(self.propertys[self.loc[tag]][self.lookup[self.propertys[self.loc[tag]][0]][loc]])
