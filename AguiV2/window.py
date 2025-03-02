@@ -1,3 +1,4 @@
+from math import trunc
 from tkinter import *
 def inArea(x, y, xp, yp, mx, my):
     if x <= mx <= xp and y <= my <= yp:
@@ -22,6 +23,7 @@ class Window():
         self.actives = []
         self.mouseMoveUpdates = []
         self.clickUpdates1 = []
+        self.keyUpdates = []
         self.updated = []
         self.n = 0 # total number of objects
 
@@ -42,6 +44,7 @@ class Window():
         self.canvas.bind("<Button-1>", self.mouse1)
         self.canvas.bind("<Button-3>", self.mouse2)
         self.canvas.bind("<Button-2>", self.mouse3)
+        self.disp.bind_all("<Key>",self.key)
         self.clicktype = None
 
 
@@ -51,6 +54,8 @@ class Window():
         self.winY = screenY
         self.mX = 0
         self.mY = 0
+        self.lastkeypressed = None
+        self.keypressed = False
 
 
 
@@ -62,7 +67,15 @@ class Window():
             "circle": {"tag": 1, "active": 2, "parent": 3, "children": 4, 'x': 5, 'y': 6, 'xp': 7, 'yp': 8,'thickness': 9, "fill": 10, "stroke": 11},
             "text":{ "tag":1, "active":2, 'parent':3, "children":4, 'x':5, "y":6, 'size':7, 'text':8, 'fill':9, 'font':10, 'angle':11},
             "hitbox":{ 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'function':9,"activated":10},
-            "button": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'functionL':9,'functionR':10,'functionM':11}
+            "button": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'functionL':9,'functionR':10,'functionM':11},
+            "textbox": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6,'xp':7,'yp':8,'size':9, 'value':10, 'fill':11, 'font':12, 'angle':13, 'defualtValue':14, 'whitelist':15, 'blacklist':16,"defaultValuePersistence":17,"selected":18}
+        }
+        self.keyupdateLookup={
+            "textbox": self.__keyTextbox__
+        }
+        self.clickupdateLookup={
+            "button": self.__updateButton__,
+            "textbox":self.__selectTextbox__
         }
         self.updateLookup={
             "point":self.__updatePoint__,
@@ -71,7 +84,8 @@ class Window():
             "circle": self.__updateCircle__,
             "text":self.__updateText__,
             "hitbox":self.__updateHitbox__,
-            "button":self.__updateButton__
+            "button":self.__updateButton__,
+            "textbox": self.__updateTextbox__
         }
         self.activeLookup={True:"normal",False:"hidden"}
 
@@ -82,20 +96,25 @@ class Window():
         self.clicktype = 1
 
         for i in self.clickUpdates1:
-            self.__update_item__(i)
+            self.__select_item__(i)
 
     def mouse2(self,event):
         self.clicktype = 2
 
         for i in self.clickUpdates1:
-            self.__update_item__(i)
+            self.__select_item__(i)
 
     def mouse3(self,event):
         self.clicktype = 3
 
         for i in self.clickUpdates1:
-            self.__update_item__(i)
-
+            self.__select_item__(i)
+    def key(self,tag):
+        self.lastkeypressed = tag.char
+        self.keypressed = True
+        for i in self.keyUpdates:
+            self.__key_item__(i)
+        self.keypressed = False
 
 
 
@@ -127,7 +146,10 @@ class Window():
 
     def __update_item__(self,tag):
         self.updateLookup[self.propertys[self.loc[tag]][0]](tag)
-
+    def __select_item__(self,tag):
+        self.clickupdateLookup[self.propertys[self.loc[tag]][0]](tag)
+    def __key_item__(self,tag):
+        self.keyupdateLookup[self.propertys[self.loc[tag]][0]](tag)
 
 
     def point(self,tag,x,y,radius=1,color="#000000",active=True,parent=None):
@@ -187,7 +209,8 @@ class Window():
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
-        self.actives.append(tag)
+        if active:
+            self.actives.append(tag)
         self.__updateRect__(tag)
     def __updateRect__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
@@ -212,7 +235,8 @@ class Window():
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
-        self.actives.append(tag)
+        if active:
+            self.actives.append(tag)
         self.__updateRect__(tag)
     def __updateCircle__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
@@ -236,7 +260,8 @@ class Window():
         self.n+=1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
-        self.actives.append(tag)
+        if active:
+            self.actives.append(tag)
     def __updateText__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
             self.__updateChildren__(tag)
@@ -259,7 +284,8 @@ class Window():
         self.n +=1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
-        self.mouseMoveUpdates.append(tag)
+        if active:
+            self.mouseMoveUpdates.append(tag)
     def __updateHitbox__(self,tag):
 
         p = self.__calcloc__(tag)
@@ -288,7 +314,8 @@ class Window():
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
-        self.clickUpdates1.append(tag)
+        if active:
+            self.clickUpdates1.append(tag)
     def __updateButton__(self,tag):
 
         p = self.__calcloc__(tag)
@@ -309,7 +336,65 @@ class Window():
             except:
                 pass
         self.__updateChildren__(tag)
+    def textbox(self,tag,x,y,xp,yp,size,defualtValue="text",blacklist=None,whitelist=None,fill="#000000",font="Lato",parent=None,active=True,angle=0,defaultValuePersistence=False,startSelected=False):
+        self.objects[tag] = self.canvas.create_text(x, y, text=str(defualtValue), fill=fill, angle=angle, font=font,anchor="w")
+        self.loc[tag] = self.n
+        self.propertys.append(["textbox", tag, active, parent, [], x, y, xp,yp,size, defualtValue, fill, font, angle,defualtValue,whitelist,blacklist,defaultValuePersistence,startSelected])
+        self.n += 1
+        if parent != None:
+            self.propertys[self.loc[parent]][4].append(tag)
+        if active:
+            self.mouseMoveUpdates.append(tag) #just activates every tick lol
+            self.clickUpdates1.append(tag)
+            self.keyUpdates.append(tag)
+        else:
+            self.canvas.itemconfig(self.objects[tag], state="hidden")
+    def __updateTextbox__(self,tag):
+        if self.propertys[self.loc[tag]][2] or tag in self.actives:
+            self.__updateChildren__(tag)
+            p = self.__calcloc__(tag)
+            x = p[0]
+            y = p[1]
+            n = self.loc[tag]
+            a = self.__calcVis__(tag)
+            if not (a):
+                self.actives.remove(tag)
+                self.canvas.itemconfig(self.objects[tag], state="hidden")
+            elif a and not (tag in self.actives):
+                self.actives.append(tag)
+                self.canvas.itemconfig(self.objects[tag], state="normal")
+            self.canvas.itemconfig(self.objects[tag],text=self.propertys[n][10])
+            medianx = x + ((len(self.propertys[n][10])/2)*self.propertys[n][9])/5
+            self.canvas.coords(self.objects[tag], self.__calcX__(x), self.__calcY__(y+(self.propertys[n][8]/2-self.propertys[n][9]/2)))
+            self.canvas.itemconfig(self.objects[tag], font=(
+            self.propertys[n][12], int(self.propertys[n][9] * (self.winX + self.winY) / 600)))
+    def __selectTextbox__(self,tag):
+        p = self.__calcloc__(tag)
+        x = p[0]
+        y = p[1]
+        n = self.loc[tag]
+        a = self.__calcVis__(tag)
+        if not (a):
+            self.clickUpdates1.remove(tag)
+        elif a and not (tag in self.clickUpdates1):
+            self.clickUpdates1.append(tag)
+        if inArea(x, y, x + self.propertys[n][7], y + self.propertys[n][8], self.mX, self.mY):
+                if not (f"{n} {18}" in self.updated):
+                    self.propertys[n][18]=True
+                    self.updated.append(f"{n} {18}")
+                    if not(tag in self.keyUpdates):
+                        self.keyUpdates.append(tag)
 
+        else:
+            if not (f"{n} {18}" in self.updated):
+                self.propertys[n][18] = False
+                self.updated.append(f"{n} {18}")
+                if tag in self.keyUpdates:
+                    self.keyUpdates.remove(tag)
+    def __keyTextbox__(self,tag):
+        key = self.lastkeypressed
+        n = self.loc[tag]
+        if(self.propertys[n][])
 
     def __calcY__(self,n):
         return n*self.winY/self.i
