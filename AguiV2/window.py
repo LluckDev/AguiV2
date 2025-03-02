@@ -1,5 +1,11 @@
 from math import trunc
 from tkinter import *
+from tkinter.font import Font
+import time
+
+from jaraco.functools import retry
+
+
 def inArea(x, y, xp, yp, mx, my):
     if x <= mx <= xp and y <= my <= yp:
         return True
@@ -55,6 +61,7 @@ class Window():
         self.mX = 0
         self.mY = 0
         self.lastkeypressed = None
+        self.laskeysym = None
         self.keypressed = False
 
 
@@ -68,7 +75,7 @@ class Window():
             "text":{ "tag":1, "active":2, 'parent':3, "children":4, 'x':5, "y":6, 'size':7, 'text':8, 'fill':9, 'font':10, 'angle':11},
             "hitbox":{ 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'function':9,"activated":10},
             "button": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'functionL':9,'functionR':10,'functionM':11},
-            "textbox": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6,'xp':7,'yp':8,'size':9, 'value':10, 'fill':11, 'font':12, 'angle':13, 'defualtValue':14, 'whitelist':15, 'blacklist':16,"defaultValuePersistence":17,"selected":18}
+            "textbox": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6,'xp':7,'yp':8,'size':9, 'value':10, 'fill':11, 'font':12, 'angle':13, 'defualtValue':14, 'whitelist':15, 'blacklist':16,"defaultValuePersistence":17,"selected":18,"position":19,"showCursor":20,"cursorTime":21}
         }
         self.keyupdateLookup={
             "textbox": self.__keyTextbox__
@@ -111,6 +118,7 @@ class Window():
             self.__select_item__(i)
     def key(self,tag):
         self.lastkeypressed = tag.char
+        self.laskeysym = tag.keysym
         self.keypressed = True
         for i in self.keyUpdates:
             self.__key_item__(i)
@@ -339,7 +347,7 @@ class Window():
     def textbox(self,tag,x,y,xp,yp,size,defualtValue="text",blacklist=None,whitelist=None,fill="#000000",font="Lato",parent=None,active=True,angle=0,defaultValuePersistence=False,startSelected=False):
         self.objects[tag] = self.canvas.create_text(x, y, text=str(defualtValue), fill=fill, angle=angle, font=font,anchor="w")
         self.loc[tag] = self.n
-        self.propertys.append(["textbox", tag, active, parent, [], x, y, xp,yp,size, defualtValue, fill, font, angle,defualtValue,whitelist,blacklist,defaultValuePersistence,startSelected])
+        self.propertys.append(["textbox", tag, active, parent, [], x, y, xp,yp,size, defualtValue, fill, font, angle,defualtValue,whitelist,blacklist,defaultValuePersistence,startSelected,len(defualtValue),-1,time.time()])
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
@@ -351,6 +359,7 @@ class Window():
             self.canvas.itemconfig(self.objects[tag], state="hidden")
     def __updateTextbox__(self,tag):
         if self.propertys[self.loc[tag]][2] or tag in self.actives:
+
             self.__updateChildren__(tag)
             p = self.__calcloc__(tag)
             x = p[0]
@@ -363,7 +372,18 @@ class Window():
             elif a and not (tag in self.actives):
                 self.actives.append(tag)
                 self.canvas.itemconfig(self.objects[tag], state="normal")
-            self.canvas.itemconfig(self.objects[tag],text=self.propertys[n][10])
+            if self.propertys[n][21] - time.time()<-.5:
+
+                self.propertys[n][20] *= -1
+                self.propertys[n][21] = time.time()
+
+            text = self.propertys[n][10]
+            if self.propertys[n][18]:
+                if self.propertys[n][20] != -1:
+                    text = self.propertys[n][10][:self.propertys[n][19]] + "|" + self.propertys[n][10][self.propertys[n][19]:]
+                else:
+                    text = self.propertys[n][10][:self.propertys[n][19]] + " " + self.propertys[n][10][self.propertys[n][19]:]
+            self.canvas.itemconfig(self.objects[tag], text=text)
             medianx = x + ((len(self.propertys[n][10])/2)*self.propertys[n][9])/5
             self.canvas.coords(self.objects[tag], self.__calcX__(x), self.__calcY__(y+(self.propertys[n][8]/2-self.propertys[n][9]/2)))
             self.canvas.itemconfig(self.objects[tag], font=(
@@ -379,11 +399,28 @@ class Window():
         elif a and not (tag in self.clickUpdates1):
             self.clickUpdates1.append(tag)
         if inArea(x, y, x + self.propertys[n][7], y + self.propertys[n][8], self.mX, self.mY):
-                if not (f"{n} {18}" in self.updated):
-                    self.propertys[n][18]=True
-                    self.updated.append(f"{n} {18}")
-                    if not(tag in self.keyUpdates):
-                        self.keyUpdates.append(tag)
+            if self.propertys[n][21] - time.time()<-.5:
+
+                self.propertys[n][20] *= -1
+                self.propertys[n][21] = time.time()
+
+            text = self.propertys[n][10]
+            if self.propertys[n][18]:
+                if self.propertys[n][20] != -1:
+                    text = self.propertys[n][10][:self.propertys[n][19]] + "|" + self.propertys[n][10][self.propertys[n][19]:]
+                else:
+                    text = self.propertys[n][10][:self.propertys[n][19]] + " " + self.propertys[n][10][self.propertys[n][19]:]
+            font = Font(family=self.propertys[n][12], size=int(self.propertys[n][9] * (self.winX + self.winY) / 600))
+            length = font.measure(text)
+            lengthperletter = self.__calcX__(length) / len(self.propertys[n][10])
+            print((round(self.mX-self.propertys[n][5]/lengthperletter)-10)/2,lengthperletter,length)
+            self.propertys[n][19] =  round(((self.mX-self.propertys[n][5]/lengthperletter)-10)/2)
+            if not (f"{n} {18}" in self.updated):
+                self.propertys[n][18]=True
+                self.updated.append(f"{n} {18}")
+                if not(tag in self.keyUpdates):
+                    self.keyUpdates.append(tag)
+
 
         else:
             if not (f"{n} {18}" in self.updated):
@@ -393,8 +430,35 @@ class Window():
                     self.keyUpdates.remove(tag)
     def __keyTextbox__(self,tag):
         key = self.lastkeypressed
+        sym = self.laskeysym
         n = self.loc[tag]
-        if(self.propertys[n][])
+        if (sym == "Left"):
+            self.propertys[n][19] -= 1
+            return
+        if (sym == "Right"):
+            self.propertys[n][19] += 1
+            return
+        if (sym == 'BackSpace'):
+            if len(self.propertys[n][10]) == 0:
+                self.propertys[n][10] = self.propertys[n][14]
+                self.propertys[n][19] = len(self.propertys[n][10])
+            self.propertys[n][10] = self.propertys[n][10][:self.propertys[n][19]-1]+self.propertys[n][10][self.propertys[n][19]:]
+            self.propertys[n][19] -= 1
+
+            return
+        if(self.propertys[n][15] != None): #checks whitelist
+            if not(key in self.propertys[n][15]):
+                return
+        if (self.propertys[n][16] != None): #checks blacklist
+            if  (key in self.propertys[n][16]):
+                return
+
+        if (self.propertys[n][17] == False and self.propertys[n][10] == self.propertys[n][14]):
+            self.propertys[n][10] = key
+            return
+        self.propertys[n][10] = self.propertys[n][10][:self.propertys[n][19]] + key + self.propertys[n][10][self.propertys[n][19]:]
+        self.propertys[n][19]+=1
+
 
     def __calcY__(self,n):
         return n*self.winY/self.i
