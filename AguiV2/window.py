@@ -413,8 +413,7 @@ class Window():
             font = Font(family=self.propertys[n][12], size=int(self.propertys[n][9] * (self.winX + self.winY) / 600))
             length = font.measure(text)
             lengthperletter = self.__calcX__(length) / len(self.propertys[n][10])
-            print((round(self.mX-self.propertys[n][5]/lengthperletter)-10)/2,lengthperletter,length)
-            self.propertys[n][19] =  round(((self.mX-self.propertys[n][5]/lengthperletter)-10)/2)
+            self.propertys[n][19] =  round(((self.mX-self.propertys[n][5]/lengthperletter)-self.propertys[n][5])/2)
             if not (f"{n} {18}" in self.updated):
                 self.propertys[n][18]=True
                 self.updated.append(f"{n} {18}")
