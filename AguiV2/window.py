@@ -3,6 +3,8 @@ from tkinter import *
 from tkinter.font import Font
 import time
 
+from more_itertools.more import difference
+
 
 def inArea(x, y, xp, yp, mx, my):
     if x <= mx <= xp and y <= my <= yp:
@@ -48,7 +50,7 @@ class Window():
         self.canvas.bind("<Button-1>", self.mouse1)
         self.canvas.bind("<Button-3>", self.mouse2)
         self.canvas.bind("<Button-2>", self.mouse3)
-        self.canvas.bind("<Button-1Release>", self.mouseup1)
+        self.canvas.bind("<ButtonRelease-1>", self.mouseup1)
         self.disp.bind_all("<Key>",self.key)
         self.clicktype = None
         self.mousedown = [False,False,False]
@@ -75,14 +77,16 @@ class Window():
             "text":{ "tag":1, "active":2, 'parent':3, "children":4, 'x':5, "y":6, 'size':7, 'text':8, 'fill':9, 'font':10, 'angle':11},
             "hitbox":{ 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'function':9,"activated":10},
             "button": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'functionL':9,'functionR':10,'functionM':11},
-            "textbox": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6,'xp':7,'yp':8,'size':9, 'value':10, 'fill':11, 'font':12, 'angle':13, 'defualtValue':14, 'whitelist':15, 'blacklist':16,"defaultValuePersistence":17,"selected":18,"position":19,"showCursor":20,"cursorTime":21}
+            "textbox": { 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6,'xp':7,'yp':8,'size':9, 'value':10, 'fill':11, 'font':12, 'angle':13, 'defualtValue':14, 'whitelist':15, 'blacklist':16,"defaultValuePersistence":17,"selected":18,"position":19,"showCursor":20,"cursorTime":21},
+            "draggable":{ 'tag':1, 'active':2, 'parent':3, "children":4, 'x':5, 'y':6, 'xp':7, 'yp':8, 'lockX':9, 'lockY':10, 'snapToMouse':11, "Xrel":12, "Yrel":13,"clickType":14}
         }
         self.keyupdateLookup={
             "textbox": self.__keyTextbox__
         }
         self.clickupdateLookup={
             "button": self.__updateButton__,
-            "textbox":self.__selectTextbox__
+            "textbox":self.__selectTextbox__,
+            "draggable":self.__selectDraggable__
         }
         self.updateLookup={
             "point":self.__updatePoint__,
@@ -92,18 +96,20 @@ class Window():
             "text":self.__updateText__,
             "hitbox":self.__updateHitbox__,
             "button":self.__updateButton__,
-            "textbox": self.__updateTextbox__
+            "textbox": self.__updateTextbox__,
+            "draggable":self.__updateDraggable__
         }
         self.activeLookup={True:"normal",False:"hidden"}
 
     def close(self):
         self.running=False
         self.disp.destroy()
-    def mouseup1(self):
+    def mouseup1(self,event):
         self.mousedown[0] = False
     def mouse1(self,event):
         self.clicktype = 1
         self.mousedown[0] = True
+
         for i in self.clickUpdates1:
             self.__select_item__(i)
 
@@ -131,6 +137,7 @@ class Window():
 
     def update(self):
         self.updated = []
+        #print(self.mouseMoveUpdates)
         if(self.winY-self.disp.winfo_height()!=0 or self.winX-self.disp.winfo_width()!=0):
             self.winY = self.disp.winfo_height()
             self.winX = self.disp.winfo_width()
@@ -188,6 +195,7 @@ class Window():
                 self.canvas.itemconfig(self.objects[tag], state="normal")
 
             self.canvas.coords(self.objects[tag],self.__calcX__(x)+(self.propertys[n][7]/2),self.__calcY__(y)+(self.propertys[n][7]/2),self.__calcX__(x)-(self.propertys[n][7]/2),self.__calcY__(y)-(self.propertys[n][7]/2))
+
     def line(self, tag, x, y, xp,yp, fill="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_line(x, y, xp-x, yp-x, fill=fill,width=thickness)
         self.loc[tag] = self.n
@@ -212,6 +220,7 @@ class Window():
                 self.actives.append(tag)
                 self.canvas.itemconfig(self.objects[tag], state="normal")
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
+
     def rect(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_rectangle(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
         self.loc[tag] = self.n
@@ -238,6 +247,7 @@ class Window():
                 self.canvas.itemconfig(self.objects[tag], state="normal")
             self.__updateChildren__(tag)
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
+
     def circle(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_oval(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
         self.loc[tag] = self.n
@@ -263,6 +273,7 @@ class Window():
                 self.actives.append(tag)
                 self.canvas.itemconfig(self.objects[tag], state="normal")
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
+
     def text(self,tag,x,y,size,text,fill="#000000",font="Lato",parent=None,active=True,angle=0):
         self.objects[tag] = self.canvas.create_text(x,y,text=str(text),fill=fill,angle=angle,font=font)
         self.loc[tag]=self.n
@@ -288,6 +299,7 @@ class Window():
                 self.canvas.itemconfig(self.objects[tag], state="normal")
             self.canvas.coords(self.objects[tag], self.__calcX__(x), self.__calcY__(y))
             self.canvas.itemconfig(self.objects[tag],font=(self.propertys[n][10],int(self.propertys[n][7]*(self.winX+self.winY)/600)))
+
     def hitbox(self,tag,x,y,xp,yp,function=None,parent=None,active=True):
         self.loc[tag] = self.n
         self.propertys.append(["hitbox",tag,active,parent,[],x,y,xp,yp,function,False])
@@ -318,6 +330,7 @@ class Window():
         else:
             self.propertys[n][10] = False
         self.__updateChildren__(tag)
+
     def button(self,tag,x,y,xp,yp,functionL,functionR=None,functionM=None,parent=None,active=True):
         self.loc[tag] = self.n
         self.propertys.append(["button", tag, active, parent, [], x, y, xp, yp, functionL,functionR,functionM])
@@ -346,6 +359,7 @@ class Window():
             except:
                 pass
         self.__updateChildren__(tag)
+
     def textbox(self,tag,x,y,xp,yp,size,defualtValue="text",blacklist=None,whitelist=None,fill="#000000",font="Lato",parent=None,active=True,angle=0,defaultValuePersistence=False,startSelected=False):
         self.objects[tag] = self.canvas.create_text(x, y, text=str(defualtValue), fill=fill, angle=angle, font=font,anchor="w")
         self.loc[tag] = self.n
@@ -460,6 +474,57 @@ class Window():
             return
         self.propertys[n][10] = self.propertys[n][10][:self.propertys[n][19]] + key + self.propertys[n][10][self.propertys[n][19]:]
         self.propertys[n][19]+=1
+
+    def draggable(self,tag,x,y,xp,yp,parent=None,active=True,lockX=False,lockY=False,snapToMouse=False,clicktype=1):
+        self.loc[tag] = self.n
+        self.propertys.append(["draggable", tag, active, parent, [], x, y, xp-x, yp-x, lockX,lockY,snapToMouse,0,0,clicktype])
+        self.n += 1
+        if parent != None:
+            self.propertys[self.loc[parent]][4].append(tag)
+        if active:
+            self.clickUpdates1.append(tag)
+    def __updateDraggable__(self,tag):
+        n = self.loc[tag]
+        a = self.__calcVis__(tag)
+
+        if a and not(tag in self.clickUpdates1):
+            self.clickUpdates1.append()
+        elif not(a) and tag in self.clickUpdates1:
+            self.clickUpdates1.remove(tag)
+        loc = self.__calcloc__(tag)
+        x, y = loc[0], loc[1]
+        if self.mousedown[self.propertys[n][14]-1] == True:
+
+            if not(self.propertys[n][9]):
+                differenceX = self.mX-x-self.propertys[n][12]
+                self.propertys[n][5] += differenceX
+            if not (self.propertys[n][10]):
+                differenceY = self.mY - y - self.propertys[n][13]
+                self.propertys[n][6] += differenceY
+
+
+        else:
+            self.mouseMoveUpdates.remove(tag)
+        self.__updateChildren__(tag)
+    def __selectDraggable__(self,tag):
+        n = self.loc[tag]
+        a = self.__calcVis__(tag)
+        if not(a):
+            self.clickUpdates1.remove(tag)
+        if (self.clicktype == self.propertys[n][14]):
+            loc = self.__calcloc__(tag)
+
+            x,y = loc[0],loc[1]
+
+            if inArea(x,y,x+self.propertys[n][7],y+self.propertys[n][8],self.mX,self.mY):
+                if not( tag in self.mouseMoveUpdates):
+                    self.mouseMoveUpdates.append(tag)
+                if(self.propertys[n][11]==False):
+                    self.propertys[n][12] = self.mX-self.propertys[n][5]
+                    self.propertys[n][13] = self.mY - self.propertys[n][6]
+                else:
+                    self.propertys[n][12] = self.propertys[n][7]/2
+                    self.propertys[n][13] = self.propertys[n][8]/2
 
 
     def __calcY__(self,n):
