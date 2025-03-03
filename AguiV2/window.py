@@ -3,8 +3,6 @@ from tkinter import *
 from tkinter.font import Font
 import time
 
-from jaraco.functools import retry
-
 
 def inArea(x, y, xp, yp, mx, my):
     if x <= mx <= xp and y <= my <= yp:
@@ -50,8 +48,10 @@ class Window():
         self.canvas.bind("<Button-1>", self.mouse1)
         self.canvas.bind("<Button-3>", self.mouse2)
         self.canvas.bind("<Button-2>", self.mouse3)
+        self.canvas.bind("<Button-1Release>", self.mouseup1)
         self.disp.bind_all("<Key>",self.key)
         self.clicktype = None
+        self.mousedown = [False,False,False]
 
 
         # vars
@@ -99,9 +99,11 @@ class Window():
     def close(self):
         self.running=False
         self.disp.destroy()
+    def mouseup1(self):
+        self.mousedown[0] = False
     def mouse1(self,event):
         self.clicktype = 1
-
+        self.mousedown[0] = True
         for i in self.clickUpdates1:
             self.__select_item__(i)
 
@@ -385,7 +387,8 @@ class Window():
                     text = self.propertys[n][10][:self.propertys[n][19]] + " " + self.propertys[n][10][self.propertys[n][19]:]
             self.canvas.itemconfig(self.objects[tag], text=text)
             medianx = x + ((len(self.propertys[n][10])/2)*self.propertys[n][9])/5
-            self.canvas.coords(self.objects[tag], self.__calcX__(x), self.__calcY__(y+(self.propertys[n][8]/2-self.propertys[n][9]/2)))
+            mediany = (self.propertys[n][8]-y)/2+y
+            self.canvas.coords(self.objects[tag], self.__calcX__(x), self.__calcY__(mediany)-int(self.propertys[n][9] * (self.winX + self.winY) / 1200))
             self.canvas.itemconfig(self.objects[tag], font=(
             self.propertys[n][12], int(self.propertys[n][9] * (self.winX + self.winY) / 600)))
     def __selectTextbox__(self,tag):
