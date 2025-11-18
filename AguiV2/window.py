@@ -199,7 +199,7 @@ class Window():
     def line(self, tag, x, y, xp,yp, fill="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_line(x, y, xp-x, yp-x, fill=fill,width=thickness)
         self.loc[tag] = self.n
-        self.propertys.append(["line", tag, active, parent, [], x, y, xp-x, yp-x,thickness, fill])
+        self.propertys.append(["line", tag, active, parent, [], x, y, xp-x, yp-y,thickness, fill])
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
@@ -224,7 +224,7 @@ class Window():
     def rect(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_rectangle(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
         self.loc[tag] = self.n
-        self.propertys.append(["rect", tag, active, parent, [], x, y, xp-x, yp-x,thickness, fill,stroke])
+        self.propertys.append(["rect", tag, active, parent, [], x, y, xp-x, yp-y,thickness, fill,stroke])
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
@@ -251,7 +251,7 @@ class Window():
     def circle(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
         self.objects[tag] = self.canvas.create_oval(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
         self.loc[tag] = self.n
-        self.propertys.append(["circle", tag, active, parent, [], x, y, xp-x, yp-x,thickness, fill,stroke])
+        self.propertys.append(["circle", tag, active, parent, [], x, y, xp-x, yp-y,thickness, fill,stroke])
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
@@ -477,7 +477,7 @@ class Window():
 
     def draggable(self,tag,x,y,xp,yp,parent=None,active=True,lockX=False,lockY=False,snapToMouse=False,clicktype=1):
         self.loc[tag] = self.n
-        self.propertys.append(["draggable", tag, active, parent, [], x, y, xp-x, yp-x, lockX,lockY,snapToMouse,0,0,clicktype])
+        self.propertys.append(["draggable", tag, active, parent, [], x, y, xp-x, yp-y, lockX,lockY,snapToMouse,0,0,clicktype])
         self.n += 1
         if parent != None:
             self.propertys[self.loc[parent]][4].append(tag)
