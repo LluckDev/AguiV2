@@ -197,7 +197,7 @@ class Window():
             self.canvas.coords(self.objects[tag],self.__calcX__(x)+(self.propertys[n][7]/2),self.__calcY__(y)+(self.propertys[n][7]/2),self.__calcX__(x)-(self.propertys[n][7]/2),self.__calcY__(y)-(self.propertys[n][7]/2))
 
     def line(self, tag, x, y, xp,yp, fill="#000000",thickness=1 ,active=True, parent=None):
-        self.objects[tag] = self.canvas.create_line(x, y, xp-x, yp-x, fill=fill,width=thickness)
+        self.objects[tag] = self.canvas.create_line(x, y, xp-x, yp-y, fill=fill,width=thickness)
         self.loc[tag] = self.n
         self.propertys.append(["line", tag, active, parent, [], x, y, xp-x, yp-y,thickness, fill])
         self.n += 1
@@ -222,7 +222,7 @@ class Window():
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
 
     def rect(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
-        self.objects[tag] = self.canvas.create_rectangle(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
+        self.objects[tag] = self.canvas.create_rectangle(x, y, xp-x, yp-y, fill=fill,outline=stroke,width=thickness)
         self.loc[tag] = self.n
         self.propertys.append(["rect", tag, active, parent, [], x, y, xp-x, yp-y,thickness, fill,stroke])
         self.n += 1
@@ -249,7 +249,7 @@ class Window():
             self.canvas.coords(self.objects[tag],self.__calcX__(x),self.__calcY__(y),self.__calcX__(x+float(self.propertys[n][7])),self.__calcY__(y+float(self.propertys[n][8])))
 
     def circle(self, tag, x, y, xp,yp, fill="#000000",stroke="#000000",thickness=1 ,active=True, parent=None):
-        self.objects[tag] = self.canvas.create_oval(x, y, xp-x, yp-x, fill=fill,outline=stroke,width=thickness)
+        self.objects[tag] = self.canvas.create_oval(x, y, xp-x, yp-y, fill=fill,outline=stroke,width=thickness)
         self.loc[tag] = self.n
         self.propertys.append(["circle", tag, active, parent, [], x, y, xp-x, yp-y,thickness, fill,stroke])
         self.n += 1
